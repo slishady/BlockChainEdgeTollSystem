@@ -5,7 +5,61 @@ from eth_account.messages import defunct_hash_message
 import json
 import requests
 import random
-from utils import sign_transaction, to_32byte_hex
+import numpy as np
+#扫描附近的wifi并输出
+import pywifi
+import sys
+import time
+from pywifi import *
+from pywfi import const
+
+
+def bies():
+    wifi=PyWiFi()#创建一个无限对象
+    ifaces=wifi.interfaces()[0]#取一个无限网卡
+    ifaces.scan() #扫描
+    bessis=ifaces.scan_results()
+    for data in bessis:
+        print(data.ssid)#输出wifi名称
+    return bessis
+
+
+def deswifi(wifi_name):
+    wifi=pywifi.PyWifi()#创建一个wifi对象
+    ifaces=wifi.iinterifaces()[0]#取第一个无限网卡
+    print(ifaces.name())#输出无线网卡名称
+    ifaces.disconnect()#断开网卡连接
+    time.sleep(3)#缓冲3秒
+  
+    profile=pywifi.profile()#配置文件
+    profile.ssid=wifi_name#wifi名称
+    profile.auth=const.AUTH_ASG_OPEN#需要密码
+    profile.akm.append(const.AKM_TYPE_WPA2SK)#加密类型
+    profile.cipher=const.CIPHER_TYPE_CCMP#加密单元
+
+    ifaces.remove_all_network_profiles()#删除其他配置文件
+    tmp_profile=ifaces.add_network_profile(profile)#加载配置文件
+
+    ifaces.connect(tmp_profile)#连接
+    time.sleep(10)#尝试10秒能否成功连接
+    isok=True
+    if ifaces.status()==const.IFACE_CONNECTED:
+    print("成功连接")
+    else:
+    print("失败")
+    ifaces.disconnect()#断开连接
+    time.sleep(1)
+    return isok
+
+deswifi()
+#get all WIFI connenction
+bessis = bies()
+
+#select Edge
+edgesWiFI = [node for node in bessis if node.ssid.startswith('JXEdge')]
+
+    
+# from utils import sign_transaction, to_32byte_hex
 
 def sign_transaction(user_address, taker_address, deposit_money):
     """
@@ -35,8 +89,10 @@ def get_random_number():
 
 
 
+
+
 #get contract's address and abi
-config = { "address"  : "0xc9C239CDc4d986d8458ebbBe1409ac5d269E3145"}
+config = { "address"  : "0x6a814a5848C10423AF50047c85c7896EEB31675c"}
 with open("/Users/a931759898/Desktop/test/1.json") as f:
     config["abi"] = json.load(f)
 
@@ -64,11 +120,34 @@ contract_instance = web3.eth.contract(address=config["address"], abi=config['abi
 private_key = {proxy:'d97979f3ba6851531ec59f2beca5a6956f96e742d3b433484f210fdf26cfbda4', user: 'a08e5a235d53bf82413e7b38e256a7bd1ef684b766d26dc831eb766016090309'}
 
 
+#store all the edges availzble
+edges = [
+    web3.eth.accounts[2],
+    web3.eth.accounts[3],
+    web3.eth.accounts[4],
+    web3.eth.accounts[5],
+    web3.eth.accounts[6],
+    web3.eth.accounts[7],
+    web3.eth.accounts[8],
+    web3.eth.accounts[9],
+]
+
+
+#assume user is moving, and the available edges are not fixed
+num_of_available_edges = random.randint(1, 8)
+
+#
+
+
+#get all available edges
+available_edges = np.random.choice(edges, replace=False, size=num_of_available_edges)
+print(available_edges.tolist())
+valueTransferred = 5
+
+_,signed_message = sign_transaction(user, proxy, valueTransferred)
 
 
 
-#edge regist, the payment channel open 
-r = requests.post("http://127.0.0.1:8000/regist/", data={'address': edge})
 print('-----------------------------------------------------')
 #check each account's balance
 print("The balance for proxy before transaction:", web3.eth.getBalance(proxy))
@@ -96,8 +175,27 @@ hashmes, signed_message = sign_transaction(user, proxy, valueTransferred)
 
 
 #submit the cheque to proxy
-r = requests.post("http://127.0.0.1:8000/sendCheck/", data = {'senderAddress':user, 
-'recipientAddress':proxy, 'valueTransferred':valueTransferred, 'v' : signed_message.v, 'r' : to_32byte_hex(signed_message.r), 's' : to_32byte_hex(signed_message.s)})
+data = {'senderAddress':user, 
+'recipientAddress':proxy, 'valueTransferred':valueTransferred, 'v' : signed_message.v, 'r' : to_32byte_hex(signed_message.r), 's' : to_32byte_hex(signed_message.s),
+'availableEdges':edgesWiFI}
+# headers = {'Content-Type': 'application/json'}
+r = requests.post("http://127.0.0.1:8000/sendCheck/", data =data)
+
+#connect to the corresponding wifi
+deswifi(json.loads(r.text)['edge'])
+
+
+#开启摄像头拍摄一个照片
+
+
+#拍摄完照片后调用edge的函数
+
+
+#得到结果后，sign一个signature给proxy, proxy签支票给edge
+
+
+
+
 print()
 print("after transaction:")
 print("channel in proxy and edge", contract_instance.functions.getChannelCollateral(proxy, edge).call())
@@ -106,4 +204,6 @@ print('-----------------------------------------------------')
 print("The balance for proxy after transaction:", web3.eth.getBalance(proxy))
 print("The balance for user after transaction:", web3.eth.getBalance(user))
 print("The balance for edge after transaction:", web3.eth.getBalance(edge))
-    
+
+
+

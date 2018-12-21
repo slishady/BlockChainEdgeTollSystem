@@ -13,7 +13,7 @@ import requests
 import random
 
 #the contract address and abi
-config = { "address"  : "0xc9C239CDc4d986d8458ebbBe1409ac5d269E3145"}
+config = { "address"  : "0x6a814a5848C10423AF50047c85c7896EEB31675c"}
 with open("/Users/a931759898/Desktop/test/1.json") as f:
     config["abi"] = json.load(f)
 
@@ -21,6 +21,7 @@ with open("/Users/a931759898/Desktop/test/1.json") as f:
 
 #set up connecntion
 web3 = Web3(HTTPProvider("http://127.0.0.1:7545"))
+# web3 = Web3((HTTPProvider("https://rinkeby.etherscan.io")))
 
 
 #local ETH accounts
@@ -35,7 +36,7 @@ edge = web3.eth.accounts[2]
 private_key = {proxy:'d97979f3ba6851531ec59f2beca5a6956f96e742d3b433484f210fdf26cfbda4', user: 'a08e5a235d53bf82413e7b38e256a7bd1ef684b766d26dc831eb766016090309'}
 
 #get the contract_instance
-# contract_instance = web3.eth.contract(address=config["address"], abi=config['abi'])
+contract_instance = web3.eth.contract(address=config["address"], abi=config['abi'])
 
 
 
@@ -79,14 +80,17 @@ def sendCheck(request):
         v = int(request.POST.get('v'))
         r = request.POST.get('r')
         s = request.POST.get('s')
-        available_edges = request.POST.get('availableEdges')
+        available_edges = request.POST.getlist('availableEdges')
+        print(available_edges)
         edge = random.choice(available_edges)
-        if contract_instance.functions.getChannelCollateral(proxy, edge).call() == 0:
-            requests.post("http://127.0.0.1:8000/regist/", data={'address': edge})
+        print(edge)
+        # if contract_instance.functions.getChannelCollateral(proxy, edge).call() == 0:
+        #     requests.post("http://127.0.0.1:8000/regist/", data={'address': edge})
         #check whether the cheque is valid
         if contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call():
             #close the channel between proxy and edge
-            contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).transact({'from':proxy})
+            contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).transact({'from':recipientAddress})
+            print(contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call() == 0)
 
             #signed a new cheque
             _, signed_message = sign_transaction(proxy, edge, valueTransferred)
@@ -94,11 +98,17 @@ def sendCheck(request):
             #send to edge
             r = requests.post("http://127.0.0.1:8000/edge/", data = {'senderAddress':proxy, 
                 'recipientAddress':edge, 'valueTransferred':valueTransferred, 'v':signed_message.v, 'r':to_32byte_hex(signed_message.r), 's':to_32byte_hex(signed_message.s)})
+            print(r.status_code)
         else:
             return HttpResponse("Invalid transaction!")
 
     #refresh the page
-    return render(request, 'sendCheck.html')
+    data = {
+        'edge': edge
+    }
+    return HttpResponse(json.dumps(data, content_type="application/json"))
+    # return render(request, 'sendCheck.html')
+
 
 
 
@@ -118,7 +128,9 @@ def receiveCheck(request):
         s = request.POST.get('s')
         if contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call():
             #close PC to get money
-            contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).transact({'from':edge})
+            contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).transact({'from':recipientAddress})
+            print(contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call() == 0)
+
         else:
             return HttpResponse("Invalid transaction!")
     return render(request, 'edge.html')

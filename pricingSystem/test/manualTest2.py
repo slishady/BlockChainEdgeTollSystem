@@ -5,13 +5,41 @@ from eth_account.messages import defunct_hash_message
 import json
 import requests
 import random
-from utils import sign_transaction, to_32byte_hex
+import numpy as np
+# from utils import sign_transaction, to_32byte_hex
+
+def sign_transaction(user_address, taker_address, deposit_money):
+    """
+    to sign a cheque
+    input: signer's address, receiver's address, amount
+    output: the hash of the message and the signed message
+    """
+    message_hash = web3.soliditySha3(['address', 'address', 'uint256'], [user_address, taker_address, deposit_money])
+    signed_message = web3.eth.account.signHash(message_hash, private_key=private_key[user_address])
+    return (message_hash,signed_message)
+
+
+def to_32byte_hex(val):
+    """
+    for data type conversion
+    To invoke the solidity's function correctly
+    """
+    return Web3.toHex(Web3.toBytes(val).rjust(32, b'\0'))
+
+
+def get_random_number():
+    """
+    input: None
+    output: return a random integer in 1 - 9
+    """
+    return random.randint(1, 10)
+
 
 
 
 
 #get contract's address and abi
-config = { "address"  : "0xc9C239CDc4d986d8458ebbBe1409ac5d269E3145"}
+config = { "address"  : "0x6a814a5848C10423AF50047c85c7896EEB31675c"}
 with open("/Users/a931759898/Desktop/test/1.json") as f:
     config["abi"] = json.load(f)
 
@@ -53,18 +81,19 @@ edges = [
 
 
 #assume user is moving, and the available edges are not fixed
-num_of_available_edges = random.randint(1, 10)
+num_of_available_edges = random.randint(1, 8)
 
 #get all available edges
-available_edges = random.choice(edges, replace=False, size=num_of_available_edges)
+available_edges = np.random.choice(edges, replace=False, size=num_of_available_edges)
+print(available_edges.tolist())
 valueTransferred = 5
 
-signed_message = sign_transaction(user, proxy, valueTransferred)
+_,signed_message = sign_transaction(user, proxy, valueTransferred)
 #send request to proxy
-r = requests.post("http://127.0.0.1:8000/sendCheck/", data = {'senderAddress':user, 
-'recipientAddress':proxy, 'valueTransferred':valueTransferred, 'v' : signed_message.v, 'r' : to_32byte_hex(signed_message.r), 's' : to_32byte_hex(signed_message.s),
-'availableEdges':available_edges}
-)
+# r = requests.post("http://127.0.0.1:8000/sendCheck/", data = {'senderAddress':user, 
+# 'recipientAddress':proxy, 'valueTransferred':valueTransferred, 'v' : signed_message.v, 'r' : to_32byte_hex(signed_message.r), 's' : to_32byte_hex(signed_message.s),
+# 'availableEdges[]':available_edges}
+# )
 
 
 print('-----------------------------------------------------')
@@ -94,8 +123,11 @@ hashmes, signed_message = sign_transaction(user, proxy, valueTransferred)
 
 
 #submit the cheque to proxy
-r = requests.post("http://127.0.0.1:8000/sendCheck/", data = {'senderAddress':user, 
-'recipientAddress':proxy, 'valueTransferred':valueTransferred, 'v' : signed_message.v, 'r' : to_32byte_hex(signed_message.r), 's' : to_32byte_hex(signed_message.s)})
+data = {'senderAddress':user, 
+'recipientAddress':proxy, 'valueTransferred':valueTransferred, 'v' : signed_message.v, 'r' : to_32byte_hex(signed_message.r), 's' : to_32byte_hex(signed_message.s),
+'availableEdges':available_edges.tolist()}
+# headers = {'Content-Type': 'application/json'}
+r = requests.post("http://127.0.0.1:8000/sendCheck/", data =data)
 print()
 print("after transaction:")
 print("channel in proxy and edge", contract_instance.functions.getChannelCollateral(proxy, edge).call())
