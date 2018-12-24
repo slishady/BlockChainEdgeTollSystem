@@ -21,4 +21,5 @@ urlpatterns = [
     path('regist/', views.index),
     path('sendCheck/',views.sendCheck),
     path('edge/', views.receiveCheck),
+    path('selectEdge/', views.selectEdge),
 ]

@@ -52,10 +52,11 @@ def to_32byte_hex(val):
 information = web3.soliditySha3(['address', 'address', 'uint256'], [proxy, edge, 0])
 
 signed_message = web3.eth.account.signHash(information, private_key=private_key[proxy])
-print(contract_instance.functions.getChannelCollateral(proxy, edge).call())
-print(contract_instance.functions.verifySignature(proxy, edge, 0, signed_message.v, to_32byte_hex(signed_message.r), to_32byte_hex(signed_message.s)).call({'from':edge}))
-print(contract_instance.functions.getChannelCollateral(proxy, edge).call())
-print(web3.eth.account.recoverHash(information, signature = signed_message.signature) == proxy)
+# print(contract_instance.functions.getChannelCollateral(proxy, edge).call())
+# print(contract_instance.functions.verifySignature(proxy, edge, 0, signed_message.v, to_32byte_hex(signed_message.r), to_32byte_hex(signed_message.s)).call({'from':edge}))
+# print(contract_instance.functions.getChannelCollateral(proxy, edge).call())
+# print(web3.eth.account.recoverHash(information, signature = signed_message.signature) == proxy)
+print(len(web3.eth.accounts))
 
 # print(to_32byte_hex(signed_message.s))
 # print(proxy)
