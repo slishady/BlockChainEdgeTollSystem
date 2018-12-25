@@ -190,7 +190,7 @@ print("channel in user and proxy", contract_instance.functions.getChannelCollate
 
 
 #user build PC itself
-tx = contract_instance.functions.openChannel(proxy).buildTransaction({'value':web3.toWei(1, 'ether'), 'nonce': web3.eth.getTransactionCount(user)})
+tx = contract_instance.functions.openChannel(proxy).buildTransaction({'value':web3.toWei(1, 'ether'), 'nonce': web3.eth.getTransactionCount(user), 'gas':60000000})
 signed_txn = web3.eth.account.signTransaction(tx, private_key=private_key[user])
 web3.eth.sendRawTransaction(signed_txn.rawTransaction)
 print('-----------------------------------------------------')
