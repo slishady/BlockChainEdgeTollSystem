@@ -39,8 +39,8 @@ def get_random_number():
 
 
 #get contract's address and abi
-config = { "address"  : "0x6a814a5848C10423AF50047c85c7896EEB31675c"}
-with open("/Users/a931759898/Desktop/test/1.json") as f:
+config = { "address"  : "0xEb38F414F50750f4A32Dd34ea2405f5CE707D695"}
+with open("ABI.json") as f:
     config["abi"] = json.load(f)
 
 
@@ -64,7 +64,7 @@ edge = web3.eth.accounts[2]
 contract_instance = web3.eth.contract(address=config["address"], abi=config['abi'])
 
 #the private key for accounts
-private_key = {proxy:'d97979f3ba6851531ec59f2beca5a6956f96e742d3b433484f210fdf26cfbda4', user: 'a08e5a235d53bf82413e7b38e256a7bd1ef684b766d26dc831eb766016090309'}
+private_key = {proxy:'93eeceaf872686b748acda18ba68acd4c13d2b786203edee237bee8017a79105', user: '57730ecf94645a7cbeb381164e8577e1122f6e909f2b46dd839480b8916a4fc2'}
 
 
 #store all the edges availzble
@@ -78,10 +78,10 @@ edges = [
     web3.eth.accounts[8],
     web3.eth.accounts[9],
 ]
-
+print(contract_instance.functions.getChannelCollateral(user, proxy).call())
 #retrive money from user
-_, signed_message = sign_transaction(user, proxy, 5)
-contract_instance.functions.closeChannel(user, proxy, 5, signed_message.v, to_32byte_hex(signed_message.r), to_32byte_hex(signed_message.s)).transact({'from':proxy, 'gas':660000})
+# _, signed_message = sign_transaction(user, proxy, 5)
+# contract_instance.functions.closeChannel(user, proxy, 5, signed_message.v, to_32byte_hex(signed_message.r), to_32byte_hex(signed_message.s)).transact({'from':proxy, 'gas':660000})
 # print(contract_instance.functions.verifySignature(user, proxy, 5, signed_message.v, to_32byte_hex(signed_message.r), to_32byte_hex(signed_message.s)).call({'from':proxy}))
 # print(contract_instance.functions.getChannelCollateral(user, proxy).call())
 # for edge in edges:

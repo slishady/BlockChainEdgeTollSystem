@@ -86,14 +86,6 @@ num_of_available_edges = random.randint(1, 8)
 #get all available edges
 available_edges = np.random.choice(edges, replace=False, size=num_of_available_edges)
 print(available_edges.tolist())
-valueTransferred = 5
-
-_,signed_message = sign_transaction(user, proxy, valueTransferred)
-#send request to proxy
-# r = requests.post("http://127.0.0.1:8000/sendCheck/", data = {'senderAddress':user, 
-# 'recipientAddress':proxy, 'valueTransferred':valueTransferred, 'v' : signed_message.v, 'r' : to_32byte_hex(signed_message.r), 's' : to_32byte_hex(signed_message.s),
-# 'availableEdges[]':available_edges}
-# )
 
 
 print('-----------------------------------------------------')
@@ -127,7 +119,8 @@ data = {'senderAddress':user,
 'recipientAddress':proxy, 'valueTransferred':valueTransferred, 'v' : signed_message.v, 'r' : to_32byte_hex(signed_message.r), 's' : to_32byte_hex(signed_message.s),
 'availableEdges':available_edges.tolist()}
 # headers = {'Content-Type': 'application/json'}
-r = requests.post("http://127.0.0.1:8000/sendCheck/", data =data)
+r = requests.post("http://127.0.0.1:8000/sendCheck/", data=data)
+
 print()
 print("after transaction:")
 print("channel in proxy and edge", contract_instance.functions.getChannelCollateral(proxy, edge).call())

@@ -1,10 +1,11 @@
+# -*- coding: UTF-8 -*-
 import pywifi
 import sys
 import time
 from pywifi import *
 from pywifi import const
 import cv2
-from wifi import Cell, Scheme
+# from wifi import Cell, Scheme
 # def snapshot():
 #     """enable the camera and take a photo"""
 #     cap = cv2.VideoCapture(0)
@@ -15,7 +16,7 @@ from wifi import Cell, Scheme
 #         cv2.imshow("capture", frame)
 #         if cv2.waitKey(1) & 0xFF == ord('q'):
 #             cv2.imwrite("/image/test.jpeg", frame)
-#             break
+#             break931759898
 #     cap.release()
 #     cv2.destroyAllWindows()
 
@@ -27,8 +28,8 @@ def bies():
     input: None
     output: the wife can connected by machine
     """
-    wifi=PyWiFi()#创建一个无限对象
-    ifaces=wifi.interfaces()[0]#取一个无限网卡
+    wifi=PyWiFi() #创建一个无限对象
+    ifaces=wifi.interfaces()[0] #取一个无限网卡
     ifaces.scan() #扫描
     bessis=ifaces.scan_results()
     for data in bessis:
@@ -102,7 +103,7 @@ def test_wifi_connect(passwordstr):
     time.sleep(3)#断开以后缓冲3秒
 
     profile=pywifi.Profile()#配置文件
-    profile.ssid="1"#wifi名称
+    profile.ssid="TP-LINK_4423"#wifi名称
     profile.auth=const.AUTH_ALG_OPEN#需要密码连接
     profile.akm.append(const.AKM_TYPE_WPA2PSK)#wifi加密
     profile.cipher=const.CIPHER_TYPE_CCMP#机密单元
@@ -112,7 +113,7 @@ def test_wifi_connect(passwordstr):
     tmp_profile=ifaces.add_network_profile(profile)#加载配置文件
 
     ifaces.connect(tmp_profile)#连接
-    time.sleep(15)#10秒内能否连接上
+    time.sleep(10)#10秒内能否连接上
     isok = True
     if ifaces.status()==const.IFACE_CONNECTED:
         print("连接成功")
@@ -125,4 +126,5 @@ def test_wifi_connect(passwordstr):
     return isok
 
 bies()
-print(test_wifi_connect('20690539'))
+print(test_wifi_connect('jiangxing123'))
+8099
