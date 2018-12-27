@@ -657,10 +657,6 @@ contract_instance = web3.eth.contract(address=config['address'], abi=config['abi
 
 # the accounts in rinkeby
 accounts = {
-    'user': {
-        'address': '0x78FCd70C3615f66AB0cCF2c10fffCC644Ad0C9b1',
-        'pass': '2696b52850e466f01f0bbd0c0a1dbf62ce0698dd6c7f21f5fe916f6bb60baa01'
-    },
     'proxy': {
         'address': '0xD7397b3894DF7168E7a103508659FC6eC5580F6b',
         'pass': '24b89be74328404b533e15821ffbaaa95682e1bec49120bc5ec7d9e78c4eb5cc'
@@ -669,7 +665,7 @@ accounts = {
         'address': '0x383B9f270bC983fB7A848B744b8A23eB5eF99699',
         'pass': '6a80e963028eab8fe909faba2e6e9ddd9ecf97858a710692e89b62ee24bfbfe1'
     },
-    'edge2': {
+    'user': {
         'address': '0x3B67e9a0cCc44d74Fe09F7816978b846215bF149',
         'pass': 'a40c701d7557dbcdc3eacf51b794b10d65a8c9d7cb3dc4277e623a1d82142c2c'
     },
@@ -684,13 +680,12 @@ m = {
     accounts['user']['address']: 'user',
     accounts['proxy']['address']: 'proxy',
     accounts['edge1']['address']: 'edge1',
-    accounts['edge2']['address']: 'edge2',
     accounts['edge3']['address']: 'edge3',
 }
 
 user = accounts['user']['address']
 proxy = accounts['proxy']['address']
-edges = [accounts['edge1']['address'], accounts['edge2']['address'], accounts['edge3']['address']]
+edges = [accounts['edge1']['address'], accounts['edge3']['address']]
 
 
 rinkeby_private_key = {
@@ -723,7 +718,11 @@ def index(request):
         models.EdgeInfo.objects.create(address=address, balance=depositToken)
 
         #build PC for edge
-        contract_instance.functions.openChannel(address).transact({'from':proxy, 'value':deposit_money*10})
+        tx = contract_instance.functions.openChannel(address).buildTransaction({'value': web3.toWei(1, 'ether') ,'nonce': web3.eth.getTransactionCount(proxy), 'gas':600000, 'chainId':4})
+        signed_txn = web3.eth.account.signTransaction(tx, private_key=rinkeby_private_key[proxy])
+        a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
+        print('On regist....')
+        print('The recipiet for tx:', a)
     
 
     user_list = models.EdgeInfo.objects.all()
@@ -754,13 +753,17 @@ def sendCheck(request):
         # if contract_instance.functions.getChannelCollateral(proxy, edge).call() == 0:
         #     requests.post("http://127.0.0.1:8000/regist/", data={'address': edge})
         #check whether the cheque is valid
+        while not contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call():
+          pass
+        print('On sendCheck....')
+        print(contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call())
         if contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call():
 
 
             # close the channel between proxy and edge, used for rinkeby
-            tx = contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).buildTransaction({'nonce': web3.toHex(web3.eth.getTransactionCount(recipientAddress)), 'gas':web3.toHex(600000), 'gasPrice':web3.toHex(web3.eth.generateGasPrice())})
-            signed_txn = web3.eth.account.signTransaction(tx, private_key=private_key[recipientAddress])
-            a = web3.etsolidity TypeError: Exactly one of the passed values can be specified. Instead, values were: (None,), {}h.sendRawTransaction(signed_txn.rawTransaction)
+            tx = contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).buildTransaction({'nonce': web3.eth.getTransactionCount(recipientAddress), 'gas':600000, 'chainId':4})
+            signed_txn = web3.eth.account.signTransaction(tx, private_key=rinkeby_private_key[recipientAddress])
+            a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
             print('The recipiet for tx:', a)
 
             
@@ -839,11 +842,15 @@ def receiveCheck(request):
         v = int(request.POST.get('v'))
         r = request.POST.get('r')
         s = request.POST.get('s')
+        print('On receiveCheck....')
+        while not contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call():
+          pass
+        print(contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call())
         if contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call():
 
 
             # close PC to get money for rinkeby
-            tx = contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).buildTransaction({'nonce': web3.toHex(web3.eth.getTransactionCount(recipientAddress)), 'gas':web3.toHex(600000), 'gasPrice':web3.toHex(web3.eth.generateGasPrice())})
+            tx = contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).buildTransaction({'nonce': web3.eth.getTransactionCount(recipientAddress), 'gas':600000, 'chainId':4})
             signed_txn = web3.eth.account.signTransaction(tx, private_key=rinkeby_private_key[recipientAddress])
             a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
             print('The recipiet for tx:', a)

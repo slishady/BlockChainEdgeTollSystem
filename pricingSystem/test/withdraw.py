@@ -162,7 +162,7 @@ private_key = {
 
 proxy = accounts['proxy']['address']
 user = accounts['user']['address']
-edge1 = accounts['edge1']['address']
+edge2 = accounts['edge1']['address']
 edge3 = accounts['edge3']['address']
 
 
@@ -189,15 +189,12 @@ print('-----------------------------------------------------')
 # print("channel in user and proxy", contract_instance.functions.getChannelCollateral(user, proxy).call())
 
 
-#each edge register first:
-r = requests.post('http://127.0.0.1:8000/regist/', data={'address':edge3})
-
 #user build PC itself
-tx = contract_instance.functions.openChannel(proxy).buildTransaction({'from': user, 'value':web3.toWei(1, 'ether'), 'nonce': web3.eth.getTransactionCount(user), 'gas':600000, 'chainId':4})
-print(tx)
-signed_txn = web3.eth.account.signTransaction(tx, private_key=private_key[user])
-print(signed_txn)
-tx = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
+# tx = contract_instance.functions.openChannel(proxy).buildTransaction({'from': user, 'value':web3.toWei(1, 'ether'), 'nonce': web3.eth.getTransactionCount(user), 'gas':600000, 'chainId':4})
+# print(tx)
+# signed_txn = web3.eth.account.signTransaction(tx, private_key=private_key[user])
+# print(signed_txn)
+# tx = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
 print('-----------------------------------------------------')
 
 
@@ -208,20 +205,20 @@ print("channel in proxy and edge", contract_instance.functions.getChannelCollate
 print("channel in user and proxy", contract_instance.functions.getChannelCollateral(user, proxy).call())
 
 
-#get all WIFI connenction
-# bessis = bies()
+# #get all WIFI connenction
+# # bessis = bies()
 
-#select Edge
-# edgesWiFi = [node.ssid for node in bessis if node.ssid == '1']
-edgesWiFi = ['TP-LINK_4423']
-data = {'edgesWiFi' : edgesWiFi}
-r = requests.post("http://127.0.0.1:8000/selectEdge/", data=data)
+# #select Edge
+# # edgesWiFi = [node.ssid for node in bessis if node.ssid == '1']
+# edgesWiFi = ['TP-LINK_4423']
+# data = {'edgesWiFi' : edgesWiFi}
+# r = requests.post("http://127.0.0.1:8000/selectEdge/", data=data)
 
 
-#connect to the corresponding wifi
-edge = json.loads(r.text)['edge']
-# connect(edge, password_map[edge])
-print('the connected edge:', edge)
+# #connect to the corresponding wifi
+# edge = json.loads(r.text)['edge']
+# # connect(edge, password_map[edge])
+# print('the connected edge:', edge)
 
 
 #开启摄像头拍摄一个照片
@@ -239,26 +236,28 @@ print('the connected edge:', edge)
 #得到结果后，sign一个signature给proxy, proxy签支票给edge
 valueTransferred = 1
 hashmes, signed_message = sign_transaction(user, proxy, valueTransferred)
-#submit the cheque to proxy
-data = {'senderAddress':user, 
-'recipientAddress':proxy, 'usedEdge':edge_address[edge],'valueTransferred':valueTransferred, 'v' : signed_message.v, 'r' : to_32byte_hex(signed_message.r), 's' : to_32byte_hex(signed_message.s)}
-#user send cheque to proxy
-r = requests.post("http://127.0.0.1:8000/sendCheck/", data=data)
-
-
-
+print(contract_instance.functions.verifySignature(user, proxy, 1, signed_message.v, to_32byte_hex(signed_message.r), to_32byte_hex(signed_message.s)).call())
+tx = contract_instance.functions.closeChannel(user, proxy, valueTransferred, signed_message.v, to_32byte_hex(signed_message.r), to_32byte_hex(signed_message.s)).buildTransaction({'nonce': web3.eth.getTransactionCount(proxy), 'gas':600000, 'chainId':4})
+signed_txn = web3.eth.account.signTransaction(tx, private_key=private_key[proxy])
+a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
+print('The recipiet for tx:', a)
+# #submit the cheque to proxy
+# data = {'senderAddress':user, 
+# 'recipientAddress':proxy, 'usedEdge':edge_address[edge],'valueTransferred':valueTransferred, 'v' : signed_message.v, 'r' : to_32byte_hex(signed_message.r), 's' : to_32byte_hex(signed_message.s)}
+# #user send cheque to proxy
+# r = requests.post("http://127.0.0.1:8000/sendCheck/", data=data)
 
 
 
 
 print()
 print("after transaction:")
-print("channel in proxy and edge", contract_instance.functions.getChannelCollateral(proxy, edge_address[edge]).call())
+# print("channel in proxy and edge", contract_instance.functions.getChannelCollateral(proxy, edge_address[edge]).call())
 print("channel in user and proxy", contract_instance.functions.getChannelCollateral(user, proxy).call())
 print('-----------------------------------------------------')
 print("The balance for proxy after transaction:", web3.eth.getBalance(proxy))
 print("The balance for user after transaction:", web3.eth.getBalance(user))
-print("The balance for edge after transaction:", web3.eth.getBalance(edge_address[edge]))
+# print("The balance for edge after transaction:", web3.eth.getBalance(edge_address[edge]))
 
 
 
