@@ -738,51 +738,54 @@ def sendCheck(request):
     output: send edge a isometric cheque 
     """
     if request.method == 'POST':
-        #get the cheque's information
-        senderAddress = request.POST.get('senderAddress')
-        recipientAddress = request.POST.get('recipientAddress')
-        valueTransferred = int(request.POST.get('valueTransferred'))
-        v = int(request.POST.get('v'))
-        r = request.POST.get('r')
-        s = request.POST.get('s')
-        edge = request.POST.get('usedEdge')
-        # available_edges = request.POST.getlist('availableEdges')
-        # print(available_edges)
-        # edge = random.choice(available_edges)
-        # print(edge)
-        # if contract_instance.functions.getChannelCollateral(proxy, edge).call() == 0:
-        #     requests.post("http://127.0.0.1:8000/regist/", data={'address': edge})
-        #check whether the cheque is valid
-        while not contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call():
+      #get the cheque's information
+      senderAddress = request.POST.get('senderAddress')
+      recipientAddress = request.POST.get('recipientAddress')
+      valueTransferred = int(request.POST.get('valueTransferred'))
+      v = int(request.POST.get('v'))
+      r = request.POST.get('r')
+      s = request.POST.get('s')
+      edge = request.POST.get('usedEdge')
+      withdraw_pole = request.POST.get('withdraw')
+      # available_edges = request.POST.getlist('availableEdges')
+      # print(available_edges)
+      # edge = random.choice(available_edges)
+      # print(edge)
+      # if contract_instance.functions.getChannelCollateral(proxy, edge).call() == 0:
+      #     requests.post("http://127.0.0.1:8000/regist/", data={'address': edge})
+      #check whether the cheque is valid
+      while not contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call():
+        pass
+      print('On sendCheck....')
+      print('The result for transaction', contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call())
+      if contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call() and withdraw_pole:
+
+
+        # close the channel between proxy and edge, used for rinkeby
+        tx = contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).buildTransaction({'nonce': web3.eth.getTransactionCount(recipientAddress), 'gas':600000, 'chainId':4})
+        signed_txn = web3.eth.account.signTransaction(tx, private_key=rinkeby_private_key[recipientAddress])
+        a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
+        print('The recipiet for tx:', a)
+
+        
+        #signed a new cheque
+        _, signed_message = sign_transaction(recipientAddress, edge, valueTransferred, rinkeby_private_key)
+
+
+        # contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).transact({'from':recipientAddress})
+        # print(contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call() == 0)
+        # _, signed_message = sign_transaction(recipientAddress, edge, valueTransferred, local_private_key)
+        while contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call():
           pass
-        print('On sendCheck....')
-        print(contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call())
-        if contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call():
 
-
-            # close the channel between proxy and edge, used for rinkeby
-            tx = contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).buildTransaction({'nonce': web3.eth.getTransactionCount(recipientAddress), 'gas':600000, 'chainId':4})
-            signed_txn = web3.eth.account.signTransaction(tx, private_key=rinkeby_private_key[recipientAddress])
-            a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
-            print('The recipiet for tx:', a)
-
-            
-            #signed a new cheque
-            _, signed_message = sign_transaction(recipientAddress, edge, valueTransferred, rinkeby_private_key)
-
-
-            # contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).transact({'from':recipientAddress})
-            # print(contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call() == 0)
-            # _, signed_message = sign_transaction(recipientAddress, edge, valueTransferred, local_private_key)
-
-
-            #send to edge
-            r = requests.post("http://127.0.0.1:8000/edge/", data = {'senderAddress':recipientAddress, 
-                'recipientAddress':edge, 'valueTransferred':valueTransferred, 'v':signed_message.v, 'r':to_32byte_hex(signed_message.r), 's':to_32byte_hex(signed_message.s)})
-            # print(r.status_code)
-            # return HttpResponse("valid transaction!")
-        else:
-            return HttpResponse("Invalid transaction!")
+        #send to edge
+      r = requests.post("http://127.0.0.1:8000/edge/", data = {'senderAddress':recipientAddress, 
+        'recipientAddress':edge, 'valueTransferred':valueTransferred, 'v':signed_message.v, 
+        'r':to_32byte_hex(signed_message.r), 's':to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole})
+        # print(r.status_code)
+        # return HttpResponse("valid transaction!")
+      else:
+          return HttpResponse("Invalid transaction!")
 
     return render(request, 'sendCheck.html')
 
@@ -815,11 +818,17 @@ def sendCheck(request):
 def selectEdge(requests):
     if requests.method == 'POST':
         edgesWiFi = requests.POST.getlist('edgesWiFi')
-
-        edge = edgesWiFi[0]
+        costForEdges = [np.random.random for _ in range(len(edgesWiFi))]
+        min_cost = 1
+        for i in range(len(costForEdges)):
+          if costForEdges[i] < min_cost:
+            min_cost = costForEdges[i]
+            edge = edgesWiFi[i]
+        # edge = edgesWiFi[0]
         #refresh the page
         data = {
             'edge': edge
+            'price': min_cost
         }
         data = json.dumps(data,ensure_ascii=False)
     return HttpResponse(data, content_type="application/json")
@@ -836,31 +845,34 @@ def receiveCheck(request):
     output : close PC and get eth
     """
     if request.method == 'POST':
-        senderAddress = request.POST.get('senderAddress')
-        recipientAddress = request.POST.get('recipientAddress')
-        valueTransferred = int(request.POST.get('valueTransferred'))
-        v = int(request.POST.get('v'))
-        r = request.POST.get('r')
-        s = request.POST.get('s')
-        print('On receiveCheck....')
-        while not contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call():
+      senderAddress = request.POST.get('senderAddress')
+      recipientAddress = request.POST.get('recipientAddress')
+      valueTransferred = int(request.POST.get('valueTransferred'))
+      v = int(request.POST.get('v'))
+      r = request.POST.get('r')
+      s = request.POST.get('s')
+      withdraw_pole = request.POST.get('withdraw')
+      print('On receiveCheck....')
+      while not contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call():
+        pass
+      print(contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call())
+      if contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call() and withdraw_pole:
+
+
+        # close PC to get money for rinkeby
+        tx = contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).buildTransaction({'nonce': web3.eth.getTransactionCount(recipientAddress), 'gas':600000, 'chainId':4})
+        signed_txn = web3.eth.account.signTransaction(tx, private_key=rinkeby_private_key[recipientAddress])
+        a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
+        
+        print('The recipiet for tx:', a)
+
+        while contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call():
           pass
-        print(contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call())
-        if contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call():
+        # contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).transact({'from':recipientAddress})
+        # print(contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call() == 0)
 
-
-            # close PC to get money for rinkeby
-            tx = contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).buildTransaction({'nonce': web3.eth.getTransactionCount(recipientAddress), 'gas':600000, 'chainId':4})
-            signed_txn = web3.eth.account.signTransaction(tx, private_key=rinkeby_private_key[recipientAddress])
-            a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
-            print('The recipiet for tx:', a)
-
-
-            # contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).transact({'from':recipientAddress})
-            # print(contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call() == 0)
-
-        else:
-            return HttpResponse("Invalid transaction!")
+      else:
+        return HttpResponse("Invalid transaction!")
     return render(request, 'edge.html')
         
     
