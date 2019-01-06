@@ -2,7 +2,7 @@ import cv2
 import requests
 import json
 
-
+from utils import utils
 def snapshot():
     """enable the camera and take a photo"""
     cap = cv2.VideoCapture(0)

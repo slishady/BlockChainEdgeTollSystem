@@ -11,7 +11,7 @@ import cv2
 import base64
 from utils import utils
 import time
-
+import numpy as np
 def sign_transaction(user_address, taker_address, deposit_money):
     """
     to sign a cheque
@@ -202,15 +202,20 @@ print("The balance for proxy before transaction:", web3.eth.getBalance(proxy))
 print("The balance for user before transaction:", web3.eth.getBalance(user))
 print("The balance for contract before transaction:", web3.eth.getBalance(configForRinkeby['address']))
 print("channel in user and proxy", contract_instance.functions.getChannelCollateral(user, proxy).call())
+total_gas = 0
 
 begin = time.time()
 #each edge register first:
 r = requests.post('http://127.0.0.1:8000/regist/', data={'address':edge3})
+total_gas += json.loads(r.text)['gas']
 
 #user build PC itself
 tx = contract_instance.functions.openChannel(proxy).buildTransaction({'from': user,'value':web3.toWei(1, 'ether'), 'nonce': web3.eth.getTransactionCount(user), 'gas':600000, 'chainId':4})
 signed_txn = web3.eth.account.signTransaction(tx, private_key=private_key[user])
-web3.eth.sendRawTransaction(signed_txn.rawTransaction)
+a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
+transaction_hash = web3.toHex(a)
+gas = web3.eth.waitForTransactionReceipt(transaction_hash).gasUsed
+total_gas += gas
 print('-----------------------------------------------------')
 
 
@@ -220,12 +225,117 @@ print("before transaction:")
 print("channel in proxy and edge", contract_instance.functions.getChannelCollateral(proxy, edge).call())
 print("channel in user and proxy", contract_instance.functions.getChannelCollateral(user, proxy).call())
 valueTransferred = 1
-
-num_of_tasks = 5
+money_saved = 0
+num_of_tasks = 6
 withdraw_pole = False
 
 #the payment channel one:
 for task_index in range(1, num_of_tasks+1):
+    if num_of_tasks == task_index:
+        withdraw_pole = True
+    #get all WIFI connenction
+    bessis = utils.bies()
+
+    #select Edge
+    edgesWiFi = [node.ssid for node in bessis if node.ssid == 'TP-LINK_4423']
+
+    data = {'edgesWiFi' : edgesWiFi}
+    r = requests.post("http://127.0.0.1:8000/selectEdge/", data=data)
+    print(r.text)
+
+
+    #connect to the corresponding wifi
+    edge = json.loads(r.text)['edge']
+    utils.connect(edge, password_map[edge])
+    money_saved += (1 - json.loads(r.text)['price'])
+
+
+    #开启摄像头拍摄一个照片
+    # utils.snapshot()
+
+
+
+    #拍摄完照片后调用edge的函数,并把图片传递
+    r = utils.send_task()
+    print('The task, ', r.status_code)
+
+
+
+
+
+
+    #得到结果后，sign一个signature给proxy, proxy签支票给edge
+    hashmes, signed_message = sign_transaction(user, proxy, valueTransferred)
+    #submit the cheque to proxy
+    data = {'senderAddress':user, 
+    'recipientAddress':proxy, 'usedEdge':edge_address[edge], 'valueTransferred' : valueTransferred, 'v' : signed_message.v, 
+    'r' : utils.to_32byte_hex(signed_message.r), 's' : utils.to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole}
+    #user send cheque to proxy
+    r = requests.post("http://127.0.0.1:8000/sendCheck/", data=data)
+    if withdraw_pole == True:
+
+        total_gas += json.loads(r.text)['gas']
+    # valueTransferred += 1
+    print('tx%i finished' % task_index)
+end = time.time()
+time_cost = end - begin
+print(time_cost)
+print(total_gas)
+with open('data11.txt', 'a') as f:
+    f.write('%i, '% time_cost)
+    f.write('%i, '% total_gas)
+    f.write('%f'% money_saved)
+    f.write('\n')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+begin = time.time()
+#each edge register first:
+# r = requests.post('http://127.0.0.1:8000/regist/', data={'address':edge3})
+
+#user build PC itself
+
+print('-----------------------------------------------------')
+
+
+# check the balance in payment channel
+print('The balance for each channel')
+print("before transaction:")
+print("channel in proxy and edge", contract_instance.functions.getChannelCollateral(proxy, edge3).call())
+print("channel in user and proxy", contract_instance.functions.getChannelCollateral(user, proxy).call())
+valueTransferred = 1
+
+num_of_tasks = 6
+withdraw_pole = True
+total_gas = 0
+money_saved = 0
+#the slow one:
+for task_index in range(1, num_of_tasks+1):
+
+    # tx = contract_instance.functions.openChannel(edge3).buildTransaction({'from': user,'value':web3.toWei(1, 'ether'), 'nonce': web3.eth.getTransactionCount(user), 'gas':600000, 'chainId':4})
+    # signed_txn = web3.eth.account.signTransaction(tx, private_key=private_key[user])
+    # web3.eth.sendRawTransaction(signed_txn.rawTransaction)
+
+    # while not (contract_instance.functions.getChannelCollateral(user, edge3).call()):
+    #     pass
     #get all WIFI connenction
     bessis = utils.bies()
 
@@ -238,96 +348,9 @@ for task_index in range(1, num_of_tasks+1):
 
     #connect to the corresponding wifi
     edge = json.loads(r.text)['edge']
-    utils.connect(edge, password_map[edge])
-
-
-    #开启摄像头拍摄一个照片
-    # utils.snapshot()
-
-
-
-    #拍摄完照片后调用edge的函数,并把图片传递
-    r = utils.send_task()
-    print('The task, ', r.status_code)
-
-
-
-
-
-
-    #得到结果后，sign一个signature给proxy, proxy签支票给edge
-    hashmes, signed_message = sign_transaction(user, proxy, valueTransferred)
-    if num_of_tasks == task_index:
-        withdraw_pole = True
-    #submit the cheque to proxy
-    data = {'senderAddress':user, 
-    'recipientAddress':proxy, 'usedEdge':edge_address[edge], 'valueTransferred' : valueTransferred, 'v' : signed_message.v, 
-    'r' : utils.to_32byte_hex(signed_message.r), 's' : utils.to_32byte_hex(signed_message.s, 'withdraw': withdraw_pole)}
-    #user send cheque to proxy
-    r = requests.post("http://127.0.0.1:8000/sendCheck/", data=data)
-    # valueTransferred += 1
-end = time.time()
-time_cost = end - begin
-print(time_cost)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-begin = time.time()
-#each edge register first:
-r = requests.post('http://127.0.0.1:8000/regist/', data={'address':edge3})
-
-#user build PC itself
-tx = contract_instance.functions.openChannel(proxy).buildTransaction({'from': user,'value':web3.toWei(1, 'ether'), 'nonce': web3.eth.getTransactionCount(user), 'gas':600000, 'chainId':4})
-signed_txn = web3.eth.account.signTransaction(tx, private_key=private_key[user])
-web3.eth.sendRawTransaction(signed_txn.rawTransaction)
-print('-----------------------------------------------------')
-
-
-# check the balance in payment channel
-print('The balance for each channel')
-print("before transaction:")
-print("channel in proxy and edge", contract_instance.functions.getChannelCollateral(proxy, edge).call())
-print("channel in user and proxy", contract_instance.functions.getChannelCollateral(user, proxy).call())
-valueTransferred = 1
-
-num_of_tasks = 5
-withdraw_pole = False
-
-#the slow one:
-for _ in range(1, num_of_tasks+1):
-    #get all WIFI connenction
-    bessis = utils.bies()
-
-    #select Edge
-    edgesWiFi = [node.ssid for node in bessis if node.ssid == 'TP-LINK_4423']
-
-    # data = {'edgesWiFi' : edgesWiFi}
-    # r = requests.post("http://127.0.0.1:8000/selectEdge/", data=data)
-
-
-    # #connect to the corresponding wifi
-    # edge = json.loads(r.text)['edge']
     edge = edgesWiFi[0]
     utils.connect(edge, password_map[edge])
+    money_saved += (1 - np.random.random())
 
 
     #开启摄像头拍摄一个照片
@@ -345,21 +368,48 @@ for _ in range(1, num_of_tasks+1):
 
 
     #得到结果后，sign一个signature给proxy, proxy签支票给edge
-    hashmes, signed_message = sign_transaction(user, proxy, valueTransferred)
+    hashmes, signed_message = sign_transaction(user, edge_address[edge], valueTransferred)
     # if num_of_tasks == 5:
     withdraw_pole = True
     #submit the cheque to proxy
-    data = {'senderAddress':user, 
-    'recipientAddress':proxy, 'usedEdge':edge_address[edge], 'valueTransferred' : valueTransferred, 'v' : signed_message.v, 
-    'r' : utils.to_32byte_hex(signed_message.r), 's' : utils.to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole}
-    #user send cheque to proxy
-    r = requests.post("http://127.0.0.1:8000/sendCheck/", data=data)
+    # data = {'senderAddress':user, 
+    # 'recipientAddress':edge_address[edge], 'valueTransferred' : valueTransferred, 'v' : signed_message.v, 
+    # 'r' : utils.to_32byte_hex(signed_message.r), 's' : utils.to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole}
+    # #user send cheque to proxy
+    # r = requests.post("http://127.0.0.1:8000/sendCheck/", data=data)
+    tx = contract_instance.functions.openChannel(edge_address[edge]).buildTransaction({'from': user,'value':web3.toWei(1, 'ether'), 'nonce': web3.eth.getTransactionCount(user), 'gas':600000, 'chainId':4})
+    signed_txn = web3.eth.account.signTransaction(tx, private_key=private_key[user])
+    a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
+    transact_hash = web3.toHex(a)   
+    gas = web3.eth.waitForTransactionReceipt(transact_hash).gasUsed
+    total_gas += gas
     # valueTransferred += 1
 
+    #edge withdraw
+
+    # contract_instance.functions.closeChannel(user, edge_address[edge], valueTransferred, signed_message.v, utils.to_32byte_hex(signed_message.r), utils.to_32byte_hex(signed_message.s)).buildTransaction({'from': edge_address[edge], 'value':web3.toWei(1, 'ether'), 'nonce': web3.eth.getTransactionCount(user), 'gas':600000, 'chainId':4})
+    # signed_txn = web3.eth.account.signTransaction(tx, private_key=private_key[edge_address[edge]])
+    # web3.eth.sendRawTransaction(signed_txn.rawTransaction)
+    # while contract_instance.functions.getChannelCollateral(user, edge).call():
+    #     pass
+    #submit the cheque to proxy
+    withdraw_pole = True
+    data = {'senderAddress':user, 
+    'recipientAddress':edge_address[edge],'valueTransferred':valueTransferred, 
+    'v' : signed_message.v, 'r' : utils.to_32byte_hex(signed_message.r), 's' : utils.to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole}
+    print("posting to receive cheque.....")
+    r = requests.post("http://127.0.0.1:8000/edge/", data=data)
+    total_gas += json.loads(r.text)['gas']
+    print('tx%i finished' % task_index)
 end2 = time.time()
 time_cost2 = end2 - begin
 print(time_cost2)
-
+print(total_gas)
+with open('data12.txt', 'a') as f:
+    f.write('%i, '% time_cost)
+    f.write('%i, '% total_gas)
+    f.write('%f' % money_saved)
+    f.write('\n')
 
 
 

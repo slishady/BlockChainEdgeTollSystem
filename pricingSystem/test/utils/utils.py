@@ -60,8 +60,8 @@ def bies():
     ifaces=wifi.interfaces()[0]#取一个无限网卡
     ifaces.scan() #扫描
     bessis=ifaces.scan_results()
-    for data in bessis:
-        print(data.ssid)#输出wifi名称
+    # for data in bessis:
+    #     print(data.ssid)#输出wifi名称
     return bessis
 
 
@@ -74,7 +74,7 @@ def snapshot():
         # show a frame
         cv2.imshow("capture", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
-            cv2.imwrite("/image/test.jpeg", frame)
+            cv2.imwrite("../image/test.jpeg", frame)
             break
     cap.release()
     cv2.destroyAllWindows()
@@ -109,8 +109,8 @@ def get_random_number():
 
 
 def send_task():
-    with open('image/test2.jpeg', 'rb') as imageFile:
+    with open('image/1.jpeg', 'rb') as imageFile:
         image2str = base64.b64encode(imageFile.read())
     a = image2str.decode('ascii')
-    r = requests.post('http://192.168.0.172:8099/detect', json = {'image': a})
+    r = requests.post('http://faceai.jiangxingai.com:8099/detect', json = {'image': a})
     return r

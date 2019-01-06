@@ -127,4 +127,3 @@ def test_wifi_connect(passwordstr):
 
 bies()
 print(test_wifi_connect('jiangxing123'))
-8099

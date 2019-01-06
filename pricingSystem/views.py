@@ -480,7 +480,7 @@ import requests
 # from django.core import serializers
 # from module_name import sign_transaction, to_32byte_hex
 import random
-
+import numpy as np
 #set up connecntion 
 #for test
 # web3 = Web3(HTTPProvider("http://127.0.0.1:7545"))
@@ -747,6 +747,10 @@ def sendCheck(request):
       s = request.POST.get('s')
       edge = request.POST.get('usedEdge')
       withdraw_pole = request.POST.get('withdraw')
+      if withdraw_pole == 'True':
+        withdraw_pole = True
+      else:
+        withdraw_pole = False
       # available_edges = request.POST.getlist('availableEdges')
       # print(available_edges)
       # edge = random.choice(available_edges)
@@ -767,11 +771,6 @@ def sendCheck(request):
         a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
         print('The recipiet for tx:', a)
 
-        
-        #signed a new cheque
-        _, signed_message = sign_transaction(recipientAddress, edge, valueTransferred, rinkeby_private_key)
-
-
         # contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).transact({'from':recipientAddress})
         # print(contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call() == 0)
         # _, signed_message = sign_transaction(recipientAddress, edge, valueTransferred, local_private_key)
@@ -779,13 +778,17 @@ def sendCheck(request):
           pass
 
         #send to edge
+        _, signed_message = sign_transaction(recipientAddress, edge, valueTransferred, rinkeby_private_key)
+        r = requests.post("http://127.0.0.1:8000/edge/", data = {'senderAddress':recipientAddress, 
+        'recipientAddress':to_32byte_hex(signed_message.r), 's':to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole})
+
+      _, signed_message = sign_transaction(recipientAddress, edge, valueTransferred, rinkeby_private_key)
       r = requests.post("http://127.0.0.1:8000/edge/", data = {'senderAddress':recipientAddress, 
-        'recipientAddress':edge, 'valueTransferred':valueTransferred, 'v':signed_message.v, 
-        'r':to_32byte_hex(signed_message.r), 's':to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole})
+        'recipientAddress':edge, 'v': sig's':to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole})
         # print(r.status_code)
         # return HttpResponse("valid transaction!")
-      else:
-          return HttpResponse("Invalid transaction!")
+      # else:
+      #   return HttpResponse("Invalid transaction!")
 
     return render(request, 'sendCheck.html')
 
@@ -818,7 +821,7 @@ def sendCheck(request):
 def selectEdge(requests):
     if requests.method == 'POST':
         edgesWiFi = requests.POST.getlist('edgesWiFi')
-        costForEdges = [np.random.random for _ in range(len(edgesWiFi))]
+        costForEdges = [np.random.random() for _ in range(len(edgesWiFi))]
         min_cost = 1
         for i in range(len(costForEdges)):
           if costForEdges[i] < min_cost:
@@ -827,8 +830,8 @@ def selectEdge(requests):
         # edge = edgesWiFi[0]
         #refresh the page
         data = {
-            'edge': edge
-            'price': min_cost
+            'edge': edge,
+            'price': str(min_cost)
         }
         data = json.dumps(data,ensure_ascii=False)
     return HttpResponse(data, content_type="application/json")
@@ -852,10 +855,17 @@ def receiveCheck(request):
       r = request.POST.get('r')
       s = request.POST.get('s')
       withdraw_pole = request.POST.get('withdraw')
+      if withdraw_pole == 'True':
+        withdraw_pole = True
+      else:
+        withdraw_pole = False
+      
+
       print('On receiveCheck....')
+      print(contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call())
       while not contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call():
         pass
-      print(contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call())
+      print(withdraw_pole)
       if contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call() and withdraw_pole:
 
 
@@ -875,6 +885,8 @@ def receiveCheck(request):
         return HttpResponse("Invalid transaction!")
     return render(request, 'edge.html')
         
+
+
     
 
 
