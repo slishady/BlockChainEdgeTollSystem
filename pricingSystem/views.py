@@ -189,7 +189,7 @@
 
 # # the accounts in rinkeby
 # accounts = {
-#     'user': {
+#     'user': {s
 #         'address': '0x78FCd70C3615f66AB0cCF2c10fffCC644Ad0C9b1',
 #         'pass': '2696b52850e466f01f0bbd0c0a1dbf62ce0698dd6c7f21f5fe916f6bb60baa01'
 #     },
@@ -721,14 +721,22 @@ def index(request):
         tx = contract_instance.functions.openChannel(address).buildTransaction({'value': web3.toWei(1, 'ether') ,'nonce': web3.eth.getTransactionCount(proxy), 'gas':600000, 'chainId':4})
         signed_txn = web3.eth.account.signTransaction(tx, private_key=rinkeby_private_key[proxy])
         a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
+        transact_hash = web3.toHex(a)
+        gas = web3.eth.waitForTransactionReceipt(transact_hash).gasUsed
         print('On regist....')
-        print('The recipiet for tx:', a)
+        print('The recipiet for tx:', transact_hash)
+        data = {
+            'gas': gas,
+        }
+        data = json.dumps(data,ensure_ascii=False)
+        return HttpResponse(data, content_type="application/json")
     
 
-    user_list = models.EdgeInfo.objects.all()
 
     #refresh the pages
-    return render(request, 'index.html', {'data': user_list})
+    else:
+      user_list = models.EdgeInfo.objects.all()
+      return render(request, 'index.html', {'data': user_list})
 
 def sendCheck(request):
     """
@@ -769,7 +777,9 @@ def sendCheck(request):
         tx = contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).buildTransaction({'nonce': web3.eth.getTransactionCount(recipientAddress), 'gas':600000, 'chainId':4})
         signed_txn = web3.eth.account.signTransaction(tx, private_key=rinkeby_private_key[recipientAddress])
         a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
-        print('The recipiet for tx:', a)
+        transact_hash = web3.toHex(a)
+        gas = web3.eth.waitForTransactionReceipt(transact_hash).gasUsed
+        print('The recipiet for tx:', transact_hash)
 
         # contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).transact({'from':recipientAddress})
         # print(contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call() == 0)
@@ -780,17 +790,26 @@ def sendCheck(request):
         #send to edge
         _, signed_message = sign_transaction(recipientAddress, edge, valueTransferred, rinkeby_private_key)
         r = requests.post("http://127.0.0.1:8000/edge/", data = {'senderAddress':recipientAddress, 
-        'recipientAddress':to_32byte_hex(signed_message.r), 's':to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole})
+        'recipientAddress':edge, 'valueTransferred': valueTransferred, 'v': signed_message.v, 'r': to_32byte_hex(signed_message.r), 's':to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole})
+        # print(r.status_code)
+        gas2 = json.loads(r.text)['gas']
+        data = {
+            'gas': gas + gas2,
+        }
+        data = json.dumps(data,ensure_ascii=False)
+        return HttpResponse(data, content_type="application/json")
 
-      _, signed_message = sign_transaction(recipientAddress, edge, valueTransferred, rinkeby_private_key)
-      r = requests.post("http://127.0.0.1:8000/edge/", data = {'senderAddress':recipientAddress, 
-        'recipientAddress':edge, 'v': sig's':to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole})
+      else:
+        _, signed_message = sign_transaction(recipientAddress, edge, valueTransferred, rinkeby_private_key)
+        r = requests.post("http://127.0.0.1:8000/edge/", data = {'senderAddress':recipientAddress, 
+          'recipientAddress':edge, 'valueTransferred': valueTransferred, 'v': signed_message.v, 'r': to_32byte_hex(signed_message.r), 's':to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole})
+        return HttpResponse('No transaction online!')
         # print(r.status_code)
         # return HttpResponse("valid transaction!")
       # else:
       #   return HttpResponse("Invalid transaction!")
-
-    return render(request, 'sendCheck.html')
+    else:
+      return HttpResponse("use POST!")
 
 # def msgcheck(requests):
 #     """
@@ -821,17 +840,19 @@ def sendCheck(request):
 def selectEdge(requests):
     if requests.method == 'POST':
         edgesWiFi = requests.POST.getlist('edgesWiFi')
-        costForEdges = [np.random.random() for _ in range(len(edgesWiFi))]
-        min_cost = 1
-        for i in range(len(costForEdges)):
-          if costForEdges[i] < min_cost:
-            min_cost = costForEdges[i]
-            edge = edgesWiFi[i]
+        costForEdges = [np.random.random() for _ in range(5)]
+        # costForEdges = [np.random.random() for _ in range(len(edgesWiFi))]
+        # min_cost = 1
+        # for i in range(len(costForEdges)):
+        #   if costForEdges[i] < min_cost:
+        #     min_cost = costForEdges[i]
+        min_cost = min(costForEdges)
+        edge = edgesWiFi[0]
         # edge = edgesWiFi[0]
         #refresh the page
         data = {
             'edge': edge,
-            'price': str(min_cost)
+            'price': min_cost
         }
         data = json.dumps(data,ensure_ascii=False)
     return HttpResponse(data, content_type="application/json")
@@ -873,17 +894,25 @@ def receiveCheck(request):
         tx = contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).buildTransaction({'nonce': web3.eth.getTransactionCount(recipientAddress), 'gas':600000, 'chainId':4})
         signed_txn = web3.eth.account.signTransaction(tx, private_key=rinkeby_private_key[recipientAddress])
         a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
+        transact_hash = web3.toHex(a)
+        gas = web3.eth.waitForTransactionReceipt(transact_hash).gasUsed
         
-        print('The recipiet for tx:', a)
-
+        print('The recipiet for tx:', transact_hash)
         while contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call():
           pass
+        print(contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call())
         # contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).transact({'from':recipientAddress})
         # print(contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call() == 0)
+        data = {
+            'gas': gas,
+        }
+        data = json.dumps(data,ensure_ascii=False)
+        return HttpResponse(data, content_type="application/json")
 
       else:
         return HttpResponse("Invalid transaction!")
-    return render(request, 'edge.html')
+    else:
+      return HttpResponse("use Post!")
         
 
 
