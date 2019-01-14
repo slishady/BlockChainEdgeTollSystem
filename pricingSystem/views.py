@@ -483,11 +483,12 @@ import random
 import numpy as np
 #set up connecntion 
 #for test
-# web3 = Web3(HTTPProvider("http://127.0.0.1:7545"))
-web3 = Web3((HTTPProvider("https://rinkeby.infura.io/v3/5590c756ce4d47269bcc0a2d462f8215")))
+web3 = Web3(HTTPProvider("http://127.0.0.1:7545"))
+# web3 = Web3((HTTPProvider("https://rinkeby.infura.io/v3/5590c756ce4d47269bcc0a2d462f8215")))
 
 #the contract address and abi
-config = { "address"  : "0xb18C59EdeC97517AE53b8d0319d7dAEE29cE5FF3"}
+# config = { "address"  : "0xb18C59EdeC97517AE53b8d0319d7dAEE29cE5FF3"}
+config = { "address"  : "0x6a814a5848C10423AF50047c85c7896EEB31675c"}
 # with open("test/ABI.json") as f:
 #     config["abi"] = json.load(f)
 
@@ -656,48 +657,55 @@ contract_instance = web3.eth.contract(address=config['address'], abi=config['abi
 # ]
 
 # the accounts in rinkeby
-accounts = {
-    'proxy': {
-        'address': '0xD7397b3894DF7168E7a103508659FC6eC5580F6b',
-        'pass': '24b89be74328404b533e15821ffbaaa95682e1bec49120bc5ec7d9e78c4eb5cc'
-    },
-    'edge1': {
-        'address': '0x383B9f270bC983fB7A848B744b8A23eB5eF99699',
-        'pass': '6a80e963028eab8fe909faba2e6e9ddd9ecf97858a710692e89b62ee24bfbfe1'
-    },
-    'user': {
-        'address': '0x3B67e9a0cCc44d74Fe09F7816978b846215bF149',
-        'pass': 'a40c701d7557dbcdc3eacf51b794b10d65a8c9d7cb3dc4277e623a1d82142c2c'
-    },
-    'edge3': {
-        'address': '0x3D8e54A9bA85FF7848aa3D1929e520BcdBbe8761', 
-        'pass': '0e308916509918a76d1f2e7973904380378d06691b8507ed9a67027fc9d2ebc0'
-    }
+# accounts = {
+#     'proxy': {
+#         'address': '0xD7397b3894DF7168E7a103508659FC6eC5580F6b',
+#         'pass': '24b89be74328404b533e15821ffbaaa95682e1bec49120bc5ec7d9e78c4eb5cc'
+#     },
+#     'edge1': {
+#         'address': '0x383B9f270bC983fB7A848B744b8A23eB5eF99699',
+#         'pass': '6a80e963028eab8fe909faba2e6e9ddd9ecf97858a710692e89b62ee24bfbfe1'
+#     },
+#     'user': {
+#         'address': '0x3B67e9a0cCc44d74Fe09F7816978b846215bF149',
+#         'pass': 'a40c701d7557dbcdc3eacf51b794b10d65a8c9d7cb3dc4277e623a1d82142c2c'
+#     },
+#     'edge3': {
+#         'address': '0x3D8e54A9bA85FF7848aa3D1929e520BcdBbe8761', 
+#         'pass': '0e308916509918a76d1f2e7973904380378d06691b8507ed9a67027fc9d2ebc0'
+#     }
 
-}
+# }
 
-m = {
-    accounts['user']['address']: 'user',
-    accounts['proxy']['address']: 'proxy',
-    accounts['edge1']['address']: 'edge1',
-    accounts['edge3']['address']: 'edge3',
-}
+# m = {
+#     accounts['user']['address']: 'user',
+#     accounts['proxy']['address']: 'proxy',
+#     accounts['edge1']['address']: 'edge1',
+#     accounts['edge3']['address']: 'edge3',
+# }
 
-user = accounts['user']['address']
-proxy = accounts['proxy']['address']
-edges = [accounts['edge1']['address'], accounts['edge3']['address']]
+# user = accounts['user']['address']
+# proxy = accounts['proxy']['address']
+# edges = [accounts['edge1']['address'], accounts['edge3']['address']]
 
 
-rinkeby_private_key = {
-    '0x78FCd70C3615f66AB0cCF2c10fffCC644Ad0C9b1': '2696b52850e466f01f0bbd0c0a1dbf62ce0698dd6c7f21f5fe916f6bb60baa01',
-    '0xD7397b3894DF7168E7a103508659FC6eC5580F6b': '24b89be74328404b533e15821ffbaaa95682e1bec49120bc5ec7d9e78c4eb5cc',
-    '0x383B9f270bC983fB7A848B744b8A23eB5eF99699': '6a80e963028eab8fe909faba2e6e9ddd9ecf97858a710692e89b62ee24bfbfe1',
-    '0x3B67e9a0cCc44d74Fe09F7816978b846215bF149': 'a40c701d7557dbcdc3eacf51b794b10d65a8c9d7cb3dc4277e623a1d82142c2c',
-    '0x3D8e54A9bA85FF7848aa3D1929e520BcdBbe8761': '0e308916509918a76d1f2e7973904380378d06691b8507ed9a67027fc9d2ebc0'
-}
+# rinkeby_private_key = {
+#     '0x78FCd70C3615f66AB0cCF2c10fffCC644Ad0C9b1': '2696b52850e466f01f0bbd0c0a1dbf62ce0698dd6c7f21f5fe916f6bb60baa01',
+#     '0xD7397b3894DF7168E7a103508659FC6eC5580F6b': '24b89be74328404b533e15821ffbaaa95682e1bec49120bc5ec7d9e78c4eb5cc',
+#     '0x383B9f270bC983fB7A848B744b8A23eB5eF99699': '6a80e963028eab8fe909faba2e6e9ddd9ecf97858a710692e89b62ee24bfbfe1',
+#     '0x3B67e9a0cCc44d74Fe09F7816978b846215bF149': 'a40c701d7557dbcdc3eacf51b794b10d65a8c9d7cb3dc4277e623a1d82142c2c',
+#     '0x3D8e54A9bA85FF7848aa3D1929e520BcdBbe8761': '0e308916509918a76d1f2e7973904380378d06691b8507ed9a67027fc9d2ebc0'
+# }
 
 #the private_key for accounts
-local_private_key = {proxy:'d97979f3ba6851531ec59f2beca5a6956f96e742d3b433484f210fdf26cfbda4', user: 'a08e5a235d53bf82413e7b38e256a7bd1ef684b766d26dc831eb766016090309'}
+local_private_key = {user:'d97979f3ba6851531ec59f2beca5a6956f96e742d3b433484f210fdf26cfbda4', proxy: 'a08e5a235d53bf82413e7b38e256a7bd1ef684b766d26dc831eb766016090309'}
+private_key = {
+    user: 'd97979f3ba6851531ec59f2beca5a6956f96e742d3b433484f210fdf26cfbda4',
+    proxy:'a08e5a235d53bf82413e7b38e256a7bd1ef684b766d26dc831eb766016090309',
+    edge1:'30341350fd95867002c89d32eb2f7c1b843e8d95310bf3c5b14e5c1ccd6db44b',
+    edge2:'e487dc9904ae94719b86d98edb970f82fbfb6c07098f3370c014b53749519ff2',
+    edge3:'fce674c91f36e1c52988aa8db06a64fcb7b85f99a42b8171216fae71bd8d40e3'
+}
 
 
 
@@ -718,8 +726,8 @@ def index(request):
         models.EdgeInfo.objects.create(address=address, balance=depositToken)
 
         #build PC for edge
-        tx = contract_instance.functions.openChannel(address).buildTransaction({'value': web3.toWei(1, 'ether') ,'nonce': web3.eth.getTransactionCount(proxy), 'gas':600000, 'chainId':4})
-        signed_txn = web3.eth.account.signTransaction(tx, private_key=rinkeby_private_key[proxy])
+        tx = contract_instance.functions.openChannel(address).buildTransaction({'value': web3.toWei(1, 'ether') ,'nonce': web3.eth.getTransactionCount(proxy), 'gas':600000})
+        signed_txn = web3.eth.account.signTransaction(tx, private_key=private_key[proxy])
         a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
         transact_hash = web3.toHex(a)
         gas = web3.eth.waitForTransactionReceipt(transact_hash).gasUsed
@@ -775,7 +783,7 @@ def sendCheck(request):
 
         # close the channel between proxy and edge, used for rinkeby
         tx = contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).buildTransaction({'nonce': web3.eth.getTransactionCount(recipientAddress), 'gas':600000, 'chainId':4})
-        signed_txn = web3.eth.account.signTransaction(tx, private_key=rinkeby_private_key[recipientAddress])
+        signed_txn = web3.eth.account.signTransaction(tx, private_key=private_key[recipientAddress])
         a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
         transact_hash = web3.toHex(a)
         gas = web3.eth.waitForTransactionReceipt(transact_hash).gasUsed
@@ -788,7 +796,7 @@ def sendCheck(request):
           pass
 
         #send to edge
-        _, signed_message = sign_transaction(recipientAddress, edge, valueTransferred, rinkeby_private_key)
+        _, signed_message = sign_transaction(recipientAddress, edge, valueTransferred, private_key)
         r = requests.post("http://127.0.0.1:8000/edge/", data = {'senderAddress':recipientAddress, 
         'recipientAddress':edge, 'valueTransferred': valueTransferred, 'v': signed_message.v, 'r': to_32byte_hex(signed_message.r), 's':to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole})
         # print(r.status_code)
@@ -800,7 +808,7 @@ def sendCheck(request):
         return HttpResponse(data, content_type="application/json")
 
       else:
-        _, signed_message = sign_transaction(recipientAddress, edge, valueTransferred, rinkeby_private_key)
+        _, signed_message = sign_transaction(recipientAddress, edge, valueTransferred, private_key)
         r = requests.post("http://127.0.0.1:8000/edge/", data = {'senderAddress':recipientAddress, 
           'recipientAddress':edge, 'valueTransferred': valueTransferred, 'v': signed_message.v, 'r': to_32byte_hex(signed_message.r), 's':to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole})
         return HttpResponse('No transaction online!')
@@ -892,7 +900,7 @@ def receiveCheck(request):
 
         # close PC to get money for rinkeby
         tx = contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).buildTransaction({'nonce': web3.eth.getTransactionCount(recipientAddress), 'gas':600000, 'chainId':4})
-        signed_txn = web3.eth.account.signTransaction(tx, private_key=rinkeby_private_key[recipientAddress])
+        signed_txn = web3.eth.account.signTransaction(tx, private_key=private_key[recipientAddress])
         a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
         transact_hash = web3.toHex(a)
         gas = web3.eth.waitForTransactionReceipt(transact_hash).gasUsed
