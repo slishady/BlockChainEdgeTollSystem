@@ -488,7 +488,7 @@ web3 = Web3(HTTPProvider("http://127.0.0.1:7545"))
 
 #the contract address and abi
 # config = { "address"  : "0xb18C59EdeC97517AE53b8d0319d7dAEE29cE5FF3"}
-config = { "address"  : "0x6a814a5848C10423AF50047c85c7896EEB31675c"}
+config = { "address"  : "0xEb38F414F50750f4A32Dd34ea2405f5CE707D695"}
 # with open("test/ABI.json") as f:
 #     config["abi"] = json.load(f)
 
@@ -698,13 +698,25 @@ contract_instance = web3.eth.contract(address=config['address'], abi=config['abi
 # }
 
 #the private_key for accounts
-local_private_key = {user:'d97979f3ba6851531ec59f2beca5a6956f96e742d3b433484f210fdf26cfbda4', proxy: 'a08e5a235d53bf82413e7b38e256a7bd1ef684b766d26dc831eb766016090309'}
+# local_private_key = {user:'d97979f3ba6851531ec59f2beca5a6956f96e742d3b433484f210fdf26cfbda4', proxy: 'a08e5a235d53bf82413e7b38e256a7bd1ef684b766d26dc831eb766016090309'}
+# # private_key = {
+#     user: 'd97979f3ba6851531ec59f2beca5a6956f96e742d3b433484f210fdf26cfbda4',
+#     proxy:'a08e5a235d53bf82413e7b38e256a7bd1ef684b766d26dc831eb766016090309',
+#     edge1:'30341350fd95867002c89d32eb2f7c1b843e8d95310bf3c5b14e5c1ccd6db44b',
+#     edge2:'e487dc9904ae94719b86d98edb970f82fbfb6c07098f3370c014b53749519ff2',
+#     edge3:'fce674c91f36e1c52988aa8db06a64fcb7b85f99a42b8171216fae71bd8d40e3'
+# }
+user = web3.eth.accounts[0]
+proxy = web3.eth.accounts[1]
+edge1 = web3.eth.accounts[2]
+edge2 = web3.eth.accounts[3]
+edge3 = web3.eth.accounts[4]
 private_key = {
-    user: 'd97979f3ba6851531ec59f2beca5a6956f96e742d3b433484f210fdf26cfbda4',
-    proxy:'a08e5a235d53bf82413e7b38e256a7bd1ef684b766d26dc831eb766016090309',
-    edge1:'30341350fd95867002c89d32eb2f7c1b843e8d95310bf3c5b14e5c1ccd6db44b',
-    edge2:'e487dc9904ae94719b86d98edb970f82fbfb6c07098f3370c014b53749519ff2',
-    edge3:'fce674c91f36e1c52988aa8db06a64fcb7b85f99a42b8171216fae71bd8d40e3'
+    user: '93eeceaf872686b748acda18ba68acd4c13d2b786203edee237bee8017a79105',
+    proxy:'57730ecf94645a7cbeb381164e8577e1122f6e909f2b46dd839480b8916a4fc2',
+    edge1:'7cad2ea1120dae749e68dfd62af603f423ebc9221fd4ac157b33873528b275d2',
+    edge2:'6cd79303468fe58a83b1c40963331a14b318b6d0497df22e668d319078174921',
+    edge3:'19e5a2a2716310a94704b976755c640bf8a4ec0253c400c080f3bc1849af6d36'
 }
 
 
@@ -753,6 +765,7 @@ def sendCheck(request):
     input: the cheque signed by user
     output: send edge a isometric cheque 
     """
+    print("it's on send Check..." )
     if request.method == 'POST':
       #get the cheque's information
       senderAddress = request.POST.get('senderAddress')
@@ -774,15 +787,17 @@ def sendCheck(request):
       # if contract_instance.functions.getChannelCollateral(proxy, edge).call() == 0:
       #     requests.post("http://127.0.0.1:8000/regist/", data={'address': edge})
       #check whether the cheque is valid
-      while not contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call():
-        pass
+      print('The result of check,', contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call())
+      # while not contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call():
+      #   pass
+      # print('The result of check,' contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call())
       print('On sendCheck....')
       print('The result for transaction', contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call())
       if contract_instance.functions.verifySignature(senderAddress, recipientAddress, valueTransferred, v, r, s).call() and withdraw_pole:
 
 
         # close the channel between proxy and edge, used for rinkeby
-        tx = contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).buildTransaction({'nonce': web3.eth.getTransactionCount(recipientAddress), 'gas':600000, 'chainId':4})
+        tx = contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).buildTransaction({'nonce': web3.eth.getTransactionCount(recipientAddress), 'gas':600000})
         signed_txn = web3.eth.account.signTransaction(tx, private_key=private_key[recipientAddress])
         a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
         transact_hash = web3.toHex(a)
@@ -792,10 +807,13 @@ def sendCheck(request):
         # contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).transact({'from':recipientAddress})
         # print(contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call() == 0)
         # _, signed_message = sign_transaction(recipientAddress, edge, valueTransferred, local_private_key)
-        while contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call():
-          pass
+        print('The result of balance:', contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call())
+        # while contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call():
+        #   pass
 
         #send to edge
+        print('the address of edge,' ,edge)
+        edge = web3.eth.accounts[2]
         _, signed_message = sign_transaction(recipientAddress, edge, valueTransferred, private_key)
         r = requests.post("http://127.0.0.1:8000/edge/", data = {'senderAddress':recipientAddress, 
         'recipientAddress':edge, 'valueTransferred': valueTransferred, 'v': signed_message.v, 'r': to_32byte_hex(signed_message.r), 's':to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole})
@@ -808,6 +826,7 @@ def sendCheck(request):
         return HttpResponse(data, content_type="application/json")
 
       else:
+        edge = edge1
         _, signed_message = sign_transaction(recipientAddress, edge, valueTransferred, private_key)
         r = requests.post("http://127.0.0.1:8000/edge/", data = {'senderAddress':recipientAddress, 
           'recipientAddress':edge, 'valueTransferred': valueTransferred, 'v': signed_message.v, 'r': to_32byte_hex(signed_message.r), 's':to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole})
@@ -899,15 +918,16 @@ def receiveCheck(request):
 
 
         # close PC to get money for rinkeby
-        tx = contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).buildTransaction({'nonce': web3.eth.getTransactionCount(recipientAddress), 'gas':600000, 'chainId':4})
+        tx = contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).buildTransaction({'nonce': web3.eth.getTransactionCount(recipientAddress), 'gas':600000})
         signed_txn = web3.eth.account.signTransaction(tx, private_key=private_key[recipientAddress])
         a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
         transact_hash = web3.toHex(a)
         gas = web3.eth.waitForTransactionReceipt(transact_hash).gasUsed
         
         print('The recipiet for tx:', transact_hash)
-        while contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call():
-          pass
+        print('The getChannelCollateral :', contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call())
+        # while contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call():
+        #   pass
         print(contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call())
         # contract_instance.functions.closeChannel(senderAddress, recipientAddress, valueTransferred, v, r, s).transact({'from':recipientAddress})
         # print(contract_instance.functions.getChannelCollateral(senderAddress, recipientAddress).call() == 0)

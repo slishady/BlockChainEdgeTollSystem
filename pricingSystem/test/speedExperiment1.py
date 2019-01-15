@@ -599,7 +599,7 @@ def sign_transaction(user_address, taker_address, deposit_money):
 
 #     ifaces.connect(tmp_profile)#连接
 #     time.sleep(15)#10秒内能否连接上
-#     isok = True
+#     isok = True0xBBC631C80f102633cb7ecd20cc02FA2A8Fb456c7
 #     if ifaces.status()==const.IFACE_CONNECTED:
 #         print("连接成功")
 #     else:
@@ -647,7 +647,8 @@ def sign_transaction(user_address, taker_address, deposit_money):
 
 
 #get contract's address and abi
-configForlocal = { "address"  : "0x6a814a5848C10423AF50047c85c7896EEB31675c"}
+# configForlocal = { "address"  : "0x6a814a5848C10423AF50047c85c7896EEB31675c"}
+configForlocal = {"address" : "0xEb38F414F50750f4A32Dd34ea2405f5CE707D695"}
 # configForRinkeby = { "address" : "0xb18C59EdeC97517AE53b8d0319d7dAEE29cE5FF3"}
 with open("ABI.json") as f:
     configForlocal["abi"] = json.load(f)
@@ -669,13 +670,22 @@ edge2 = web3.eth.accounts[3]
 edge3 = web3.eth.accounts[4]
 
 edge = edge1
+# private_key = {
+#     user: 'd97979f3ba6851531ec59f2beca5a6956f96e742d3b433484f210fdf26cfbda4',
+#     proxy:'a08e5a235d53bf82413e7b38e256a7bd1ef684b766d26dc831eb766016090309',
+#     edge1:'30341350fd95867002c89d32eb2f7c1b843e8d95310bf3c5b14e5c1ccd6db44b',
+#     edge2:'e487dc9904ae94719b86d98edb970f82fbfb6c07098f3370c014b53749519ff2',
+#     edge3:'fce674c91f36e1c52988aa8db06a64fcb7b85f99a42b8171216fae71bd8d40e3'
+# }
+
 private_key = {
-    user: 'd97979f3ba6851531ec59f2beca5a6956f96e742d3b433484f210fdf26cfbda4',
-    proxy:'a08e5a235d53bf82413e7b38e256a7bd1ef684b766d26dc831eb766016090309',
-    edge1:'30341350fd95867002c89d32eb2f7c1b843e8d95310bf3c5b14e5c1ccd6db44b',
-    edge2:'e487dc9904ae94719b86d98edb970f82fbfb6c07098f3370c014b53749519ff2',
-    edge3:'fce674c91f36e1c52988aa8db06a64fcb7b85f99a42b8171216fae71bd8d40e3'
+    user: '93eeceaf872686b748acda18ba68acd4c13d2b786203edee237bee8017a79105',
+    proxy:'57730ecf94645a7cbeb381164e8577e1122f6e909f2b46dd839480b8916a4fc2',
+    edge1:'7cad2ea1120dae749e68dfd62af603f423ebc9221fd4ac157b33873528b275d2',
+    edge2:'6cd79303468fe58a83b1c40963331a14b318b6d0497df22e668d319078174921',
+    edge3:'19e5a2a2716310a94704b976755c640bf8a4ec0253c400c080f3bc1849af6d36'
 }
+
 
 
 edge_address = {
@@ -690,7 +700,7 @@ password_map = {
 
 
 num_lists = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
-for num_of_tasks in range(10, target_times+1):
+for num_of_tasks in range(1, target_times+1):
     if num_of_tasks not in num_lists:
         continue
     print('#%i' %num_of_tasks)
@@ -711,7 +721,10 @@ for num_of_tasks in range(10, target_times+1):
     #the private key for accounts
 
     # accounts = {
-    #     'proxy': {
+    #     'proxy': {num_lists = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+# for num_of_tasks in range(1, target_times+1):
+#     if num_of_tasks not in num_lists:
+#         continue
     #         'address': '0xD7397b3894DF7168E7a103508659FC6eC5580F6b',
     #         'pass': '24b89be74328404b533e15821ffbaaa95682e1bec49120bc5ec7d9e78c4eb5cc'
     #     },
@@ -762,11 +775,15 @@ for num_of_tasks in range(10, target_times+1):
 
     begin = time.time()
     #each edge register first:
-    r = requests.post('http://127.0.0.1:8000/regist/', data={'address':edge3})
-    total_gas += json.loads(r.text)['gas']
+    edge = edge1
+    r = requests.post('http://127.0.0.1:8000/regist/', data={'address':edge})
+    try:
+    	total_gas += json.loads(r.text)['gas']
+    except:
+    	pass
 
     #user build PC itself
-    tx = contract_instance.functions.openChannel(proxy).buildTransaction({'from': user,'value':web3.toWei(1, 'ether')})
+    tx = contract_instance.functions.openChannel(proxy).buildTransaction({'from': user,'value':web3.toWei(1, 'ether'), 'nonce':web3.eth.getTransactionCount(user)})
     signed_txn = web3.eth.account.signTransaction(tx, private_key=private_key[user])
     a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
     transaction_hash = web3.toHex(a)
@@ -784,6 +801,7 @@ for num_of_tasks in range(10, target_times+1):
     withdraw_pole = False
     total_valueTransferred = 0
     #the payment channel one:
+    print('num_of_tasks : ',num_of_tasks)
     for task_index in range(1, num_of_tasks+1):
         if num_of_tasks == task_index:
             withdraw_pole = True
@@ -810,7 +828,10 @@ for num_of_tasks in range(10, target_times+1):
 
 
         #拍摄完照片后调用edge的函数,并把图片传递
-        r = utils.send_task()
+        try:
+        	r = utils.send_task()
+        except:
+        	pass
         print('The task, ', r.status_code)
 
 
@@ -828,9 +849,13 @@ for num_of_tasks in range(10, target_times+1):
         'recipientAddress':proxy, 'usedEdge':edge_address[edge], 'valueTransferred' : valueTransferred, 'v' : signed_message.v, 
         'r' : utils.to_32byte_hex(signed_message.r), 's' : utils.to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole}
         #user send cheque to proxy
+        print('sending check....')
         r = requests.post("http://127.0.0.1:8000/sendCheck/", data=data)
         if withdraw_pole == True:
-            total_gas += json.loads(r.text)['gas']
+            try:
+                total_gas += json.loads(r.text)['gas']
+            except:
+                pass
         # valueTransferred += 1
         print('tx%i finished' % task_index)
     end = time.time()
@@ -838,7 +863,7 @@ for num_of_tasks in range(10, target_times+1):
     print(time_cost)
     print(total_gas)
     new_time_cost = time_cost
-    with open('truffle-data.txt', 'a') as f:
+    with open('truffle-data101.txt', 'a') as f:
         f.write('#%i\n' %num_of_tasks)
         f.write('%i, '% new_time_cost)
         f.write('%i, '% total_gas)
@@ -919,7 +944,10 @@ for num_of_tasks in range(10, target_times+1):
 
 
         #拍摄完照片后调用edge的函数,并把图片传递
-        r = utils.send_task()
+        try:
+        	r = utils.send_task()
+        except:
+        	pass
         print('The task, ', r.status_code)
 
 
@@ -928,7 +956,9 @@ for num_of_tasks in range(10, target_times+1):
 
         valueTransferred = int(np.random.random()*1000)
         #得到结果后，sign一个signature给proxy, proxy签支票给edge
-        hashmes, signed_message = sign_transaction(user, edge_address[edge], valueTransferred)
+        edge = web3.eth.accounts[2]
+        print('The address of edge..,', edge)
+        hashmes, signed_message = sign_transaction(user, edge, valueTransferred)
         # if num_of_tasks == 5:
         withdraw_pole = True
         #submit the cheque to proxy
@@ -937,7 +967,7 @@ for num_of_tasks in range(10, target_times+1):
         # 'r' : utils.to_32byte_hex(signed_message.r), 's' : utils.to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole}
         # #user send cheque to proxy
         # r = requests.post("http://127.0.0.1:8000/sendCheck/", data=data)
-        tx = contract_instance.functions.openChannel(edge_address[edge]).buildTransaction({'from': user,'value':web3.toWei(1, 'ether'), 'nonce': web3.eth.getTransactionCount(user), 'gas':600000, 'chainId':4})
+        tx = contract_instance.functions.openChannel(edge).buildTransaction({'from': user,'value':web3.toWei(1, 'ether'), 'nonce': web3.eth.getTransactionCount(user), 'gas':600000})
         signed_txn = web3.eth.account.signTransaction(tx, private_key=private_key[user])
         a = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
         transact_hash = web3.toHex(a)   
@@ -955,17 +985,20 @@ for num_of_tasks in range(10, target_times+1):
         #submit the cheque to proxy
         withdraw_pole = True
         data = {'senderAddress':user, 
-        'recipientAddress':edge_address[edge],'valueTransferred':valueTransferred, 
+        'recipientAddress':edge,'valueTransferred':valueTransferred, 
         'v' : signed_message.v, 'r' : utils.to_32byte_hex(signed_message.r), 's' : utils.to_32byte_hex(signed_message.s), 'withdraw': withdraw_pole}
         print("posting to receive cheque.....")
         r = requests.post("http://127.0.0.1:8000/edge/", data=data)
-        total_gas += json.loads(r.text)['gas']
+        try:
+        	total_gas += json.loads(r.text)['gas']
+        except:
+        	pass
         print('tx%i finished' % task_index)
     end2 = time.time()
     time_cost2 = end2 - begin
     print(time_cost2)
     print(total_gas)
-    with open('data12.txt', 'a') as f:
+    with open('truffle-data102.txt', 'a') as f:
         f.write('#%i\n' %num_of_tasks)
         f.write('%i, '% time_cost2)
         f.write('%i, '% total_gas)
@@ -977,12 +1010,12 @@ for num_of_tasks in range(10, target_times+1):
 
     print()
     print("after transaction:")
-    print("channel in proxy and edge", contract_instance.functions.getChannelCollateral(proxy, edge_address[edge]).call())
+    print("channel in proxy and edge", contract_instance.functions.getChannelCollateral(proxy, edge).call())
     print("channel in user and proxy", contract_instance.functions.getChannelCollateral(user, proxy).call())
     print('-----------------------------------------------------')
     print("The balance for proxy after transaction:", web3.eth.getBalance(proxy))
     print("The balance for user after transaction:", web3.eth.getBalance(user))
-    print("The balance for edge after transaction:", web3.eth.getBalance(edge_address[edge]))
+    print("The balance for edge after transaction:", web3.eth.getBalance(edge))
 
 
 
